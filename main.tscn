@@ -1,0 +1,67 @@
+[gd_scene load_steps=8 format=3 uid="uid://hisv2i8wwbf1"]
+
+[ext_resource type="Script" path="res://addons/disdot/src/disdot.gd" id="1_xjcev"]
+[ext_resource type="Script" path="res://addons/disdot/src/token.gd" id="2_2k61q"]
+[ext_resource type="Script" path="res://addons/disdot/src/intents.gd" id="3_2bm5a"]
+[ext_resource type="Script" path="res://addons/disdot/src/command.gd" id="3_tclju"]
+[ext_resource type="Script" path="res://addons/disdot/src/commands.gd" id="4_eo5tj"]
+
+[sub_resource type="Resource" id="Resource_7moh0"]
+script = ExtResource("2_2k61q")
+method = 1
+token = ""
+file_path = "res://token"
+
+[sub_resource type="GDScript" id="GDScript_crlyj"]
+resource_name = "quit"
+script/source = "extends Button
+
+@export var disdot: Disdot
+
+func _pressed() -> void:
+	#disdot.stop()
+	get_tree().quit()
+"
+
+[node name="Node" type="Node"]
+
+[node name="Disdot" type="Node" parent="."]
+script = ExtResource("1_xjcev")
+token = SubResource("Resource_7moh0")
+app_id = 1197089417853153402
+
+[node name="Intents" type="Node" parent="Disdot"]
+script = ExtResource("3_2bm5a")
+intents = 32768
+
+[node name="Commands" type="Node" parent="Disdot"]
+script = ExtResource("4_eo5tj")
+prefix = "!"
+
+[node name="Command" type="Node" parent="Disdot/Commands"]
+script = ExtResource("3_tclju")
+
+[node name="UI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Quit" type="Button" parent="UI"]
+custom_minimum_size = Vector2(150, 80)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -21.0
+offset_top = -15.5
+offset_right = 21.0
+offset_bottom = 15.5
+grow_horizontal = 2
+grow_vertical = 2
+text = "Quit"
+script = SubResource("GDScript_crlyj")
