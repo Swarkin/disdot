@@ -1,67 +1,58 @@
-[gd_scene load_steps=8 format=3 uid="uid://hisv2i8wwbf1"]
+[gd_scene load_steps=10 format=3 uid="uid://hisv2i8wwbf1"]
 
 [ext_resource type="Script" path="res://addons/disdot/src/disdot.gd" id="1_xjcev"]
-[ext_resource type="Script" path="res://addons/disdot/src/token.gd" id="2_2k61q"]
-[ext_resource type="Script" path="res://addons/disdot/src/intents.gd" id="3_2bm5a"]
-[ext_resource type="Script" path="res://addons/disdot/src/command.gd" id="3_tclju"]
-[ext_resource type="Script" path="res://addons/disdot/src/commands.gd" id="4_eo5tj"]
+[ext_resource type="Script" path="res://addons/disdot/src/classes/value_container.gd" id="2_2k61q"]
+[ext_resource type="Script" path="res://ping.gd" id="4_lmbwl"]
+[ext_resource type="Script" path="res://addons/disdot/src/classes/command_group.gd" id="4_mweah"]
+[ext_resource type="Script" path="res://ready.gd" id="5_hurxr"]
+[ext_resource type="Script" path="res://reply.gd" id="5_q38s0"]
+[ext_resource type="Script" path="res://say.gd" id="6_gv8p7"]
 
-[sub_resource type="Resource" id="Resource_7moh0"]
+[sub_resource type="Resource" id="Resource_cyakd"]
 script = ExtResource("2_2k61q")
-method = 1
-token = ""
+source = 1
+value = ""
 file_path = "res://token"
 
-[sub_resource type="GDScript" id="GDScript_crlyj"]
-resource_name = "quit"
-script/source = "extends Button
+[sub_resource type="Resource" id="Resource_hdpnc"]
+script = ExtResource("2_2k61q")
+source = 1
+value = ""
+file_path = "res://app_id"
 
-@export var disdot: Disdot
-
-func _pressed() -> void:
-	#disdot.stop()
-	get_tree().quit()
-"
-
-[node name="Node" type="Node"]
+[node name="App" type="Node"]
 
 [node name="Disdot" type="Node" parent="."]
 script = ExtResource("1_xjcev")
-token = SubResource("Resource_7moh0")
-app_id = 1197089417853153402
-
-[node name="Intents" type="Node" parent="Disdot"]
-script = ExtResource("3_2bm5a")
-intents = 32768
+bot_token = SubResource("Resource_cyakd")
+app_id = SubResource("Resource_hdpnc")
+intents = 33280
 
 [node name="Commands" type="Node" parent="Disdot"]
-script = ExtResource("4_eo5tj")
+
+[node name="ping" type="Node" parent="Disdot/Commands"]
+script = ExtResource("4_lmbwl")
 prefix = "!"
 
-[node name="Command" type="Node" parent="Disdot/Commands"]
-script = ExtResource("3_tclju")
+[node name="test" type="Node" parent="Disdot/Commands"]
+script = ExtResource("4_mweah")
+prefix = "test "
 
-[node name="UI" type="Control" parent="."]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="reply" type="Node" parent="Disdot/Commands/test"]
+script = ExtResource("5_q38s0")
 
-[node name="Quit" type="Button" parent="UI"]
-custom_minimum_size = Vector2(150, 80)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -21.0
-offset_top = -15.5
-offset_right = 21.0
-offset_bottom = 15.5
-grow_horizontal = 2
-grow_vertical = 2
-text = "Quit"
-script = SubResource("GDScript_crlyj")
+[node name="say" type="Node" parent="Disdot/Commands/test"]
+script = ExtResource("6_gv8p7")
+
+[node name="Events" type="Node" parent="Disdot"]
+
+[node name="Ready" type="Node" parent="Disdot/Events"]
+script = ExtResource("5_hurxr")
+
+[node name="Notes" type="Node" parent="."]
+editor_description = "- probably need to split up the command handling classes into prefixed and slash command handlers
+- event specific contexts?
+- optional verbose prints in the discordapi class
+- discordapi should have return types resembling the resulting data and have a function to retrieve the last error
+- convert all data classes to have _init constructors with raw or optional value fields, with static functions to construct them from json or for other purposes
+"
