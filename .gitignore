@@ -1,4 +1,8 @@
 .godot/
-addons/
+addons/*
 !addons/disdot
+!addons/awaitable_httprequest
+!addons/better_base_class
+!addons/better_websocket
 token
+app_id
