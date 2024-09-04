@@ -231,7 +231,7 @@ func update_events() -> void:
 	for node in events_node.get_children():
 		if node is EventHandler:
 			var event := node as EventHandler
-			var event_name := event.name.to_upper()
+			var event_name := event.name.to_snake_case().to_upper()
 			if !event_name in EventType:
 				push_warning("Invalid Event "+event_name)
 				continue

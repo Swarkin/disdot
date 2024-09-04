@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://hisv2i8wwbf1"]
+[gd_scene load_steps=11 format=3 uid="uid://hisv2i8wwbf1"]
 
 [ext_resource type="Script" path="res://addons/disdot/src/disdot.gd" id="1_xjcev"]
 [ext_resource type="Script" path="res://addons/disdot/src/classes/value_container.gd" id="2_2k61q"]
@@ -7,14 +7,15 @@
 [ext_resource type="Script" path="res://ready.gd" id="5_hurxr"]
 [ext_resource type="Script" path="res://reply.gd" id="5_q38s0"]
 [ext_resource type="Script" path="res://say.gd" id="6_gv8p7"]
+[ext_resource type="Script" path="res://message_create.gd" id="7_hvo28"]
 
-[sub_resource type="Resource" id="Resource_cyakd"]
+[sub_resource type="Resource" id="Resource_v6fhi"]
 script = ExtResource("2_2k61q")
 source = 1
 value = ""
 file_path = "res://token"
 
-[sub_resource type="Resource" id="Resource_hdpnc"]
+[sub_resource type="Resource" id="Resource_v00m7"]
 script = ExtResource("2_2k61q")
 source = 1
 value = ""
@@ -24,15 +25,14 @@ file_path = "res://app_id"
 
 [node name="Disdot" type="Node" parent="."]
 script = ExtResource("1_xjcev")
-bot_token = SubResource("Resource_cyakd")
-app_id = SubResource("Resource_hdpnc")
+bot_token = SubResource("Resource_v6fhi")
+app_id = SubResource("Resource_v00m7")
 intents = 33280
 
 [node name="Commands" type="Node" parent="Disdot"]
 
 [node name="ping" type="Node" parent="Disdot/Commands"]
 script = ExtResource("4_lmbwl")
-prefix = "!"
 
 [node name="test" type="Node" parent="Disdot/Commands"]
 script = ExtResource("4_mweah")
@@ -48,6 +48,9 @@ script = ExtResource("6_gv8p7")
 
 [node name="Ready" type="Node" parent="Disdot/Events"]
 script = ExtResource("5_hurxr")
+
+[node name="MessageCreate" type="Node" parent="Disdot/Events"]
+script = ExtResource("7_hvo28")
 
 [node name="Notes" type="Node" parent="."]
 editor_description = "- probably need to split up the command handling classes into prefixed and slash command handlers
