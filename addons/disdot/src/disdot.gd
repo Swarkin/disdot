@@ -150,8 +150,7 @@ func _on_packet_received(p: PackedByteArray) -> void:
 					if verbose: print("--- Unhandled\n")
 					return
 
-			if verbose: print()
-			_dispatch_event(event_name.capitalize(), event)
+			_dispatch_event(event_name.to_snake_case().to_upper(), event)
 
 		Op.HELLO:
 			if verbose: print("Hello Opcode received")
@@ -253,6 +252,7 @@ func _cache_command(cmd: CommandHandler, prefix := "") -> void:
 
 func _dispatch_command(cmd_name: String, prefix: String, ctx: CommandContext) -> void:
 	if !command_cache.has(prefix):
+		if verbose: print("No handler for command ", cmd_name)
 		return
 
 	for handler in command_cache[prefix] as Array[CommandHandler]:
@@ -262,11 +262,14 @@ func _dispatch_command(cmd_name: String, prefix: String, ctx: CommandContext) ->
 
 func _dispatch_event(event_name: String, data: Event) -> void:
 	if !event_cache.has(event_name):
+		if verbose: print("No handler for event ", event_name)
 		return
 
 	match event_name:
 		EventType.READY:
 			(event_cache[event_name] as ReadyEventHandler)._on_event(data)
+		EventType.MESSAGE_CREATE:
+			(event_cache[event_name] as MessageCreateEventHandler)._on_event(data)
 		_:
 			push_warning("Invalid or unhandled Event "+event_name)
 
