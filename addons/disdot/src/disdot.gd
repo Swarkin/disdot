@@ -90,9 +90,11 @@ func _ready() -> void:
 		print("\nStarting...")
 
 	var r := await _api.get_gateway_bot()
-	assert(r.success and r.status_code == 200, "GET /gateway/bot failed")
+	assert(r.success() and r.status_ok(), "GET /gateway/bot failed")
 
-	_socket_url = (r.json as Dictionary).get("url") as String + "/?v=10&encoding=json"
+	var json := r.body_as_json()
+	assert(json)
+	_socket_url = (json as Dictionary).get("url") as String + "/?v=10&encoding=json"
 	if verbose: print("Websocket URL: ", _socket_url)
 
 	_socket.begin_connection(_socket_url)

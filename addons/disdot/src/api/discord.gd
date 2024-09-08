@@ -17,7 +17,7 @@ var token: ValueContainer
 var app_id: ValueContainer
 
 
-func _request(url: String, method := HTTPClient.Method.METHOD_GET, custom_headers := PackedStringArray(), request_body := "") -> AwaitableHTTPRequest.HTTPResult:
+func _request(url: String, method := HTTPClient.Method.METHOD_GET, custom_headers := PackedStringArray(), request_body := "") -> HTTPResult:
 	var http := AwaitableHTTPRequest.new()
 	http.accept_gzip = false
 	http.timeout = 8.0
@@ -26,7 +26,7 @@ func _request(url: String, method := HTTPClient.Method.METHOD_GET, custom_header
 	await get_tree().process_frame
 	await get_tree().process_frame
 
-	var r := await http.async_request(url, method, custom_headers if !custom_headers.is_empty() else headers(), request_body)
+	var r := await http.async_request(url, custom_headers if !custom_headers.is_empty() else headers(), method, request_body)
 	http.queue_free()
 	return r
 
@@ -55,16 +55,16 @@ func headers(json_content := true) -> PackedStringArray:
 	return h
 
 
-func get_gateway_bot() -> AwaitableHTTPRequest.HTTPResult:
+func get_gateway_bot() -> HTTPResult:
 	var url := join([BASE_URL, "gateway", "bot"])
 	return await _request(url, HTTPClient.METHOD_GET, headers())
 
 
-func get_message(channel_id: int, message_id: int) -> AwaitableHTTPRequest.HTTPResult:
+func get_message(channel_id: int, message_id: int) -> HTTPResult:
 	var url := join([BASE_URL, "channels", str(channel_id), "messages", str(message_id)])
 	return await _request(url)
 
-func create_message(channel_id: int, content: String, msg_ref: MessageReference = null) -> AwaitableHTTPRequest.HTTPResult:
+func create_message(channel_id: int, content: String, msg_ref: MessageReference = null) -> HTTPResult:
 	var url := join([BASE_URL, "channels", str(channel_id), "messages"])
 
 	var data := {"content": content}
@@ -72,6 +72,6 @@ func create_message(channel_id: int, content: String, msg_ref: MessageReference 
 
 	return await _request(url, HTTPClient.METHOD_POST, headers(), JSON.stringify(data))
 
-func delete_message(channel_id: int, message_id: int) -> AwaitableHTTPRequest.HTTPResult:
+func delete_message(channel_id: int, message_id: int) -> HTTPResult:
 	var url := join([BASE_URL, "channels", str(channel_id), "messages", str(message_id)])
 	return await _request(url, HTTPClient.METHOD_DELETE)
