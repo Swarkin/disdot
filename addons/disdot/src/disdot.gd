@@ -138,7 +138,7 @@ func _on_packet_received(p: PackedByteArray) -> void:
 					event = ReadyEvent.new(event_data)
 
 				EventType.MESSAGE_CREATE:
-					event = MessageCreateEvent.new(event_data)
+					event = MessageCreateEvent.new(event_data, _api)
 					for prefix in command_cache.keys() as Array[String]:
 						if event.message.content.begins_with(prefix):
 							for cmd in command_cache[prefix] as Array[CommandHandler]:

@@ -75,3 +75,8 @@ func create_message(channel_id: int, content: String, msg_ref: MessageReference 
 func delete_message(channel_id: int, message_id: int) -> HTTPResult:
 	var url := join([BASE_URL, "channels", str(channel_id), "messages", str(message_id)])
 	return await _request(url, HTTPClient.METHOD_DELETE)
+
+
+func get_channel(channel_id: int) -> HTTPResult:
+	var url := join([BASE_URL, "channels", str(channel_id)])
+	return await _request(url)
