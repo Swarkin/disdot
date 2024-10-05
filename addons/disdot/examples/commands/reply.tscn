@@ -1,0 +1,28 @@
+[gd_scene load_steps=6 format=3 uid="uid://dpwi53dg4qp7f"]
+
+[ext_resource type="Script" path="res://addons/disdot/src/disdot.gd" id="1_lrckh"]
+[ext_resource type="Script" path="res://addons/disdot/src/classes/value_container.gd" id="2_e1k4a"]
+[ext_resource type="Script" path="res://addons/disdot/examples/commands/reply.gd" id="3_ctq72"]
+
+[sub_resource type="Resource" id="Resource_n5csh"]
+script = ExtResource("2_e1k4a")
+source = 1
+value = ""
+file_path = "res://token"
+
+[sub_resource type="Resource" id="Resource_xc6sk"]
+script = ExtResource("2_e1k4a")
+source = 1
+value = ""
+file_path = "res://app_id"
+
+[node name="Disdot" type="Node"]
+script = ExtResource("1_lrckh")
+bot_token = SubResource("Resource_n5csh")
+app_id = SubResource("Resource_xc6sk")
+intents = 33280
+
+[node name="Commands" type="Node" parent="."]
+
+[node name="echo" type="Node" parent="Commands"]
+script = ExtResource("3_ctq72")

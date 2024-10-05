@@ -1,0 +1,27 @@
+[gd_scene load_steps=6 format=3 uid="uid://p38u1gf3leya"]
+
+[ext_resource type="Script" path="res://addons/disdot/src/disdot.gd" id="1_kxsmx"]
+[ext_resource type="Script" path="res://addons/disdot/src/classes/value_container.gd" id="2_ihmao"]
+[ext_resource type="Script" path="res://addons/disdot/examples/events/ready.gd" id="3_aqfow"]
+
+[sub_resource type="Resource" id="Resource_ghivy"]
+script = ExtResource("2_ihmao")
+source = 1
+value = ""
+file_path = "res://token"
+
+[sub_resource type="Resource" id="Resource_pf82c"]
+script = ExtResource("2_ihmao")
+source = 1
+value = ""
+file_path = "res://app_id"
+
+[node name="Disdot" type="Node"]
+script = ExtResource("1_kxsmx")
+bot_token = SubResource("Resource_ghivy")
+app_id = SubResource("Resource_pf82c")
+
+[node name="Events" type="Node" parent="."]
+
+[node name="Ready" type="Node" parent="Events"]
+script = ExtResource("3_aqfow")

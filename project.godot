@@ -12,7 +12,6 @@ config_version=5
 
 config/name="Disdot"
 config/version="0.1"
-run/main_scene="res://main.tscn"
 run/print_header=false
 config/features=PackedStringArray("4.4", "GL Compatibility")
 run/low_processor_mode=true
@@ -58,6 +57,7 @@ import/blender/enabled=false
 [input_devices]
 
 pen_tablet/driver="dummy"
+pen_tablet/driver.windows="dummy"
 
 [network]
 
@@ -67,12 +67,12 @@ limits/tcp/connect_timeout_seconds=10
 
 common/physics_ticks_per_second=1
 common/physics_jitter_fix=0.0
+2d/physics_engine="Dummy"
+3d/physics_engine="Dummy"
 common/enable_object_picking=false
 
 [rendering]
 
-renderer/rendering_method="gl_compatibility"
-renderer/rendering_method.mobile="gl_compatibility"
 driver/depth_prepass/enable=false
 anti_aliasing/screen_space_roughness_limiter/enabled=false
 environment/defaults/default_clear_color=Color(0, 0, 0, 1)
