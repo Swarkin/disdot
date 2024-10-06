@@ -142,6 +142,9 @@ func _on_packet_received(p: PackedByteArray) -> void:
 					for prefix in command_cache.keys() as Array[String]:
 						if event.message.content.begins_with(prefix):
 							for cmd in command_cache[prefix] as Array[CommandHandler]:
+								if cmd.ignore_bots and event.message.author.bot:
+									continue
+
 								if event.message.content.begins_with(prefix+cmd.name):
 									_dispatch_command(cmd.name, prefix, CommandContext.new(_api, event.message))
 

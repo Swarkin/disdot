@@ -3,6 +3,7 @@ class_name CommandHandler
 extends Node
 
 @export var prefix: String
+@export var ignore_bots := true
 
 func _on_command(ctx: CommandContext) -> void:
 	pass
