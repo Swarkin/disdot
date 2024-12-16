@@ -1,0 +1,33 @@
+[gd_scene load_steps=7 format=3 uid="uid://dylojaniyau0n"]
+
+[ext_resource type="Script" uid="uid://c5q4kwh5ad1wc" path="res://addons/disdot/src/disdot.gd" id="1_oqy0r"]
+[ext_resource type="Script" uid="uid://djqyayc07p26o" path="res://addons/disdot/src/classes/value_container.gd" id="2_nasds"]
+[ext_resource type="Script" uid="uid://oih8k0ddno53" path="res://addons/disdot/examples/events/interaction_create.gd" id="2_p5mlq"]
+[ext_resource type="Script" uid="uid://6qxtaojgkh4v" path="res://addons/disdot/src/classes/events/interaction_create.gd" id="3_nasds"]
+
+[sub_resource type="Resource" id="Resource_a8xco"]
+script = ExtResource("2_nasds")
+source = 1
+value = ""
+file_path = "res://token"
+metadata/_custom_type_script = ExtResource("2_nasds")
+
+[sub_resource type="Resource" id="Resource_m3yea"]
+script = ExtResource("2_nasds")
+source = 1
+value = ""
+file_path = "res://app_id"
+metadata/_custom_type_script = ExtResource("2_nasds")
+
+[node name="Disdot" type="Node"]
+script = ExtResource("1_oqy0r")
+bot_token = SubResource("Resource_a8xco")
+app_id = SubResource("Resource_m3yea")
+intents = 33280
+metadata/_custom_type_script = ExtResource("1_oqy0r")
+
+[node name="Events" type="Node" parent="."]
+
+[node name="InteractionCreate" type="Node" parent="Events"]
+script = ExtResource("2_p5mlq")
+metadata/_custom_type_script = ExtResource("3_nasds")

@@ -13,11 +13,14 @@ enum Op {
 	REQUEST_GUILD_MEMBERS = 8,
 	INVALID_SESSION = 9,
 	HELLO = 10,
-	HEARTBEAT_ACK = 11 }
+	HEARTBEAT_ACK = 11
+}
+
 class EventType:
 	const READY := "READY"
 	const MESSAGE_CREATE := "MESSAGE_CREATE"
 	const GUILD_CREATE := "GUILD_CREATE"
+	const INTERACTION_CREATE := "INTERACTION_CREATE"
 
 @export var bot_token: ValueContainer
 @export var app_id: ValueContainer
@@ -54,8 +57,8 @@ var _heartbeat_timer: Timer
 var _socket_url: String
 var _last_seq: int
 
-var command_cache: Dictionary #[prefix: String, commands: Array[CommandHandler]]
-var event_cache: Dictionary #[name: String, event: EventHandler]
+var command_cache: Dictionary[String, Array]  # Array[CommandHandler]
+var event_cache: Dictionary[String, EventHandler]
 
 func _ready() -> void:
 	assert(!bot_token.get_value().is_empty(), "Bot Token missing")
@@ -149,7 +152,10 @@ func _on_packet_received(p: PackedByteArray) -> void:
 									_dispatch_command(cmd.name, prefix, CommandContext.new(_api, event.message))
 
 				EventType.GUILD_CREATE:
-					event = GuildCreateEvent.new(event_data)
+					event = GuildCreateEvent.new(event_data, _api)
+
+				EventType.INTERACTION_CREATE:
+					event = InteractionCreateEvent.new(event_data, _api)
 
 				_:
 					if verbose: print("--- Unhandled\n")
@@ -275,6 +281,8 @@ func _dispatch_event(event_name: String, data: Event) -> void:
 			(event_cache[event_name] as ReadyEventHandler)._on_event(data)
 		EventType.MESSAGE_CREATE:
 			(event_cache[event_name] as MessageCreateEventHandler)._on_event(data)
+		EventType.INTERACTION_CREATE:
+			(event_cache[event_name] as InteractionCreateEventHandler)._on_event(data)
 		_:
 			push_warning("Invalid or unhandled Event "+event_name)
 
@@ -282,7 +290,7 @@ func _dispatch_event(event_name: String, data: Event) -> void:
 func _strip_packet_recursive(d: Dictionary, rm_key: String) -> void:
 	d.erase(rm_key)
 
-	for key in d.keys() as Array[String]:
+	for key in d.keys():
 		var val := d[key] as Variant
 
 		if val is Dictionary:
@@ -291,7 +299,7 @@ func _strip_packet_recursive(d: Dictionary, rm_key: String) -> void:
 			_walk_array(val as Array, rm_key)
 
 func _walk_array(arr: Array, rm_key: String) -> void:
-	for val: Variant in arr:
+	for val in arr:
 		if val is Dictionary:
 			_strip_packet_recursive(val as Dictionary, rm_key)
 		elif val is Array:
