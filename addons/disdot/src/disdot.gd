@@ -152,7 +152,7 @@ func _on_packet_received(p: PackedByteArray) -> void:
 									_dispatch_command(cmd.name, prefix, CommandContext.new(_api, event.message))
 
 				EventType.GUILD_CREATE:
-					event = GuildCreateEvent.new(event_data, _api)
+					event = GuildCreateEvent.new(event_data)
 
 				EventType.INTERACTION_CREATE:
 					event = InteractionCreateEvent.new(event_data, _api)
