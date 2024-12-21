@@ -1,4 +1,5 @@
 .godot/
+.editorconfig
 addons/*
 !addons/disdot
 !addons/awaitable_http_request
