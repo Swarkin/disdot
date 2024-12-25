@@ -1,6 +1,9 @@
 extends Node
 class_name Disdot
 
+signal starting
+signal stopping
+
 enum Op {
 	INVALID = -1,
 	DISPATCH = 0,
@@ -24,6 +27,7 @@ class EventType:
 
 @export var bot_token: ValueContainer
 @export var app_id: ValueContainer
+@export var autostart := false
 @export var verbose := true
 @export_flags(
 	"GUILDS:1",
@@ -59,10 +63,7 @@ var _last_seq: int
 var command_cache: Dictionary[String, Array]  # Array[CommandHandler]
 var event_cache: Dictionary[String, EventHandler]
 
-func _ready() -> void:
-	assert(!bot_token.get_value().is_empty(), "Bot Token missing")
-	assert(!app_id.get_value().is_empty(), "App ID missing")
-
+func _enter_tree() -> void:
 	_api = DiscordAPI.new()
 	_api.token = bot_token
 	_api.app_id = app_id
@@ -77,6 +78,17 @@ func _ready() -> void:
 	for n in [_api, _socket, _heartbeat_timer] as Array[Node]:
 		add_child(n)
 
+	if autostart:
+		start()
+
+
+func start() -> void:
+	print("Starting...")
+	starting.emit()
+
+	if !validate_parameters():
+		return
+
 	update_commands()
 	update_events()
 
@@ -85,28 +97,41 @@ func _ready() -> void:
 		print("App ID: "+str(app_id.get_value()))
 		print("Commands: "+str(command_cache))
 		print("Events: "+str(event_cache))
-		print("\nStarting...")
 
 	var r := await _api.get_gateway_bot()
-	assert(r.success() and r.status_ok(), "GET /gateway/bot failed")
+	if !r.success() or !r.status_ok():
+		push_error("GET /gateway/bot failed")
+		return
 
 	var json := r.body_as_json()
-	assert(json)
-	_socket_url = (json as Dictionary).get("url") as String + "/?v=10&encoding=json"
+	if json is not Dictionary:
+		push_error("Invalid /gateway/bot response" + (": "+str(json)) if verbose else "")
+		return
+
+	var url_base := (json as Dictionary).get("url", "") as String
+	if url_base.is_empty():
+		push_error("Invalid /gateway/bot response json" + (": "+str(json)) if verbose else "")
+		return
+
+	_socket_url = url_base + "/?v=10&encoding=json"
 	if verbose: print("Websocket URL: ", _socket_url)
 
-	_socket.begin_connection(_socket_url)
+	var err := _socket.begin_connection(_socket_url)
+	if err:
+		push_error("Failed to start Websocket connection: ", error_string(err))
+		return
 
 
 func stop() -> void:
-	if verbose: print("Stopping...")
+	if _socket.s.get_ready_state() == WebSocketPeer.STATE_CLOSED:
+		push_error("Websocket is not connected")
+		return
 
+	stopping.emit()
+
+	if verbose: print("Stopping...")
 	_heartbeat_timer.stop()
 	_socket.close_connection()
-
-func _input(event: InputEvent) -> void:
-	if event.is_action_pressed(&"ui_cancel"):
-		stop()
 
 
 func _on_packet_received(p: PackedByteArray) -> void:
@@ -208,7 +233,6 @@ func _update_seq(num: Variant) -> void:
 		_last_seq = num
 		if verbose: print_rich("[color=gray]Sequence number: ", num, "[/color]")
 
-
 func update_commands() -> void:
 	command_cache.clear()
 	var cmds_node := get_node_or_null(^"Commands")
@@ -254,6 +278,16 @@ func _cache_command(cmd: CommandHandler, prefix := "") -> void:
 	else:
 		command_cache[prefix] = [cmd] as Array[CommandHandler]
 		if verbose: print("Adding Command ", cmd.name)
+
+func validate_parameters() -> bool:
+	if bot_token.get_value().is_empty():
+		push_error("Bot Token missing")
+		return false
+	if app_id.get_value().is_empty():
+		push_error("App ID missing")
+		return false
+	return true
+
 
 
 func _dispatch_command(cmd_name: String, prefix: String, ctx: CommandContext) -> void:
