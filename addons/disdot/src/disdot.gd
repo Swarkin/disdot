@@ -50,7 +50,6 @@ class EventType:
 ) var intents: int
 
 var _api: DiscordAPI
-var _http: AwaitableHTTPRequest
 var _socket: BetterWebsocket
 var _heartbeat_timer: Timer
 
@@ -68,10 +67,6 @@ func _ready() -> void:
 	_api.token = bot_token
 	_api.app_id = app_id
 
-	_http = AwaitableHTTPRequest.new()
-	_http.accept_gzip = false
-	_http.timeout = 8.0
-
 	_socket = BetterWebsocket.new()
 	_socket.verbose = true
 	_socket.packet_received.connect(_on_packet_received)
@@ -79,7 +74,7 @@ func _ready() -> void:
 	_heartbeat_timer = Timer.new()
 	_heartbeat_timer.timeout.connect(_heartbeat)
 
-	for n in [_api, _http, _socket, _heartbeat_timer] as Array[Node]:
+	for n in [_api, _socket, _heartbeat_timer] as Array[Node]:
 		add_child(n)
 
 	update_commands()
