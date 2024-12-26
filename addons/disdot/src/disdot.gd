@@ -3,6 +3,8 @@ class_name Disdot
 
 signal starting
 signal stopping
+signal opcode(op: int, out: bool)
+signal seqnum(seq: int)
 
 enum Op {
 	INVALID = -1,
@@ -84,13 +86,14 @@ func _enter_tree() -> void:
 
 func start() -> void:
 	print("Starting...")
-	starting.emit()
 
 	if !validate_parameters():
 		return
 
 	update_commands()
 	update_events()
+
+	starting.emit()
 
 	if verbose:
 		print("Token: "+bot_token.get_value())
@@ -142,12 +145,14 @@ func _on_packet_received(p: PackedByteArray) -> void:
 	var json := JSON.parse_string(packet_str) as Dictionary
 	_strip_packet_recursive(json, "_trace")
 
-	var op := json.get("op", -1) as Op
-	assert(op != -1)
+	var op := json.get("op", Op.INVALID) as Op
+	assert(op != Op.INVALID)
+
+	opcode.emit(op, false)
 
 	match op:
 		Op.DISPATCH:
-			_update_seq(json.get("s"))
+			_update_seq(json.get("s") as int)
 
 			var event_data := json.get("d") as Dictionary
 			var event_name := json.get("t") as String
@@ -209,6 +214,8 @@ func _heartbeat() -> void:
 		{"op": Op.HEARTBEAT, "d": _last_seq if _last_seq else null}
 	))
 
+	opcode.emit(Op.HEARTBEAT, true)
+
 func _identify() -> void:
 	if verbose: print("Identify with intents ", intents)
 
@@ -225,13 +232,15 @@ func _identify() -> void:
 		}
 	}))
 
-func _update_seq(num: Variant) -> void:
-	if num is int:
-		if not _last_seq + 1 == num:
-			push_warning("Missed a sequence number!")
+	opcode.emit(Op.IDENTIFY, true)
 
-		_last_seq = num
-		if verbose: print_rich("[color=gray]Sequence number: ", num, "[/color]")
+func _update_seq(num: int) -> void:
+	if not _last_seq + 1 == num:
+		push_warning("Missed a sequence number!")
+
+	_last_seq = num
+	seqnum.emit(num)
+	if verbose: print_rich("[color=gray]Sequence number: ", num, "[/color]")
 
 func update_commands() -> void:
 	command_cache.clear()
@@ -287,7 +296,6 @@ func validate_parameters() -> bool:
 		push_error("App ID missing")
 		return false
 	return true
-
 
 
 func _dispatch_command(cmd_name: String, prefix: String, ctx: CommandContext) -> void:

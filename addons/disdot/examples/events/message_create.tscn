@@ -1,8 +1,8 @@
 [gd_scene load_steps=6 format=3 uid="uid://bwx72r34ctxmn"]
 
-[ext_resource type="Script" path="res://addons/disdot/src/disdot.gd" id="1_32273"]
-[ext_resource type="Script" path="res://addons/disdot/src/classes/value_container.gd" id="2_7psns"]
-[ext_resource type="Script" path="res://addons/disdot/examples/events/message_create.gd" id="3_rfppv"]
+[ext_resource type="Script" uid="uid://c5q4kwh5ad1wc" path="res://addons/disdot/src/disdot.gd" id="1_32273"]
+[ext_resource type="Script" uid="uid://djqyayc07p26o" path="res://addons/disdot/src/classes/value_container.gd" id="2_7psns"]
+[ext_resource type="Script" uid="uid://cwk3py2p6vvkk" path="res://addons/disdot/examples/events/message_create.gd" id="3_rfppv"]
 
 [sub_resource type="Resource" id="Resource_n5csh"]
 script = ExtResource("2_7psns")
