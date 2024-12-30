@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://hisv2i8wwbf1"]
+[gd_scene load_steps=19 format=3 uid="uid://hisv2i8wwbf1"]
 
 [ext_resource type="Script" uid="uid://c5q4kwh5ad1wc" path="res://addons/disdot/src/disdot.gd" id="1_0hxir"]
 [ext_resource type="Script" uid="uid://djqyayc07p26o" path="res://addons/disdot/src/classes/value_container.gd" id="2_sm5al"]
@@ -29,14 +29,27 @@ corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
 corner_detail = 5
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ea3ys"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.1, 0.1, 0.1, 0.6)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+
 [sub_resource type="Theme" id="Theme_0hxir"]
 default_font_size = 14
-Button/font_sizes/font_size = 16
+Button/font_sizes/font_size = 14
 MarginContainer/constants/margin_bottom = 8
 MarginContainer/constants/margin_left = 8
 MarginContainer/constants/margin_right = 8
 MarginContainer/constants/margin_top = 8
 PanelContainer/styles/panel = SubResource("StyleBoxFlat_a1x3t")
+TabContainer/styles/panel = SubResource("StyleBoxFlat_ea3ys")
 
 [sub_resource type="GDScript" id="GDScript_sm5al"]
 resource_name = "controls"
@@ -142,23 +155,40 @@ func _none_label() -> Label:
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0hxir"]
 
-[sub_resource type="GDScript" id="GDScript_ksn0x"]
-resource_name = "opcodes"
+[sub_resource type="GDScript" id="GDScript_ea3ys"]
+resource_name = "packets"
 script/source = "extends Container
 
 @export var disdot: Disdot
-@export var opcodes: VBoxContainer
+@export var container: Container
+@export var label_template: Label
 
 func _ready() -> void:
-	disdot.opcode.connect(append_opcode)
+	disdot._socket.packet_received.connect(_on_packet_received)
 
-func append_opcode(op: int, out: bool) -> void:
-	var label := Label.new()
-	label.text = (\"< \" if out else \"> \") + str(op)
-	opcodes.add_child(label)
+func _on_packet_received(content: PackedByteArray) -> void:
+	var label := label_template.duplicate()
+	var panel := PanelContainer.new()
+	label.text = content.get_string_from_utf8()
+	label.visible = true
+	panel.add_child(label)
+	container.add_child(panel)
+
+func _on_clear_pressed() -> void:
+	for c in container.get_children():
+		c.queue_free()
 "
 
+[sub_resource type="SystemFont" id="SystemFont_ea3ys"]
+font_names = PackedStringArray("Azeret Mono", "Cascadia Mono", "Lucida Console", "Monospace")
+
+[sub_resource type="LabelSettings" id="LabelSettings_fwq5q"]
+line_spacing = 0.0
+font = SubResource("SystemFont_ea3ys")
+font_size = 14
+
 [node name="Dev" type="Node"]
+editor_description = "Disdot debugging scene for development"
 
 [node name="Disdot" type="Node" parent="."]
 unique_name_in_owner = true
@@ -211,97 +241,110 @@ size_flags_horizontal = 3
 focus_mode = 0
 text = "Stop"
 
-[node name="HFlow" type="HFlowContainer" parent="UI/Scroll/VBox"]
+[node name="Categories" type="TabContainer" parent="UI/Scroll/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
+current_tab = 1
+tab_focus_mode = 0
 
-[node name="Socket" type="PanelContainer" parent="UI/Scroll/VBox/HFlow" node_paths=PackedStringArray("disdot", "status_label", "seq_label")]
+[node name="Misc" type="HFlowContainer" parent="UI/Scroll/VBox/Categories"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+metadata/_tab_index = 0
+
+[node name="Socket" type="PanelContainer" parent="UI/Scroll/VBox/Categories/Misc" node_paths=PackedStringArray("disdot", "status_label", "seq_label")]
 custom_minimum_size = Vector2(100, 100)
 layout_mode = 2
 script = SubResource("GDScript_0hxir")
-disdot = NodePath("../../../../../Disdot")
+disdot = NodePath("../../../../../../Disdot")
 status_label = NodePath("VBox/Status")
 seq_label = NodePath("VBox/Seq")
 
-[node name="VBox" type="VBoxContainer" parent="UI/Scroll/VBox/HFlow/Socket"]
+[node name="VBox" type="VBoxContainer" parent="UI/Scroll/VBox/Categories/Misc/Socket"]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="UI/Scroll/VBox/HFlow/Socket/VBox"]
+[node name="Title" type="Label" parent="UI/Scroll/VBox/Categories/Misc/Socket/VBox"]
 layout_mode = 2
 text = "Socket"
 label_settings = SubResource("LabelSettings_0hxir")
 
-[node name="Status" type="Label" parent="UI/Scroll/VBox/HFlow/Socket/VBox"]
+[node name="Status" type="Label" parent="UI/Scroll/VBox/Categories/Misc/Socket/VBox"]
 layout_mode = 2
 text = "Status"
 
-[node name="Seq" type="Label" parent="UI/Scroll/VBox/HFlow/Socket/VBox"]
+[node name="Seq" type="Label" parent="UI/Scroll/VBox/Categories/Misc/Socket/VBox"]
 layout_mode = 2
 text = "Seq"
 
-[node name="RegisteredItems" type="PanelContainer" parent="UI/Scroll/VBox/HFlow" node_paths=PackedStringArray("disdot", "commands", "events")]
+[node name="RegisteredItems" type="PanelContainer" parent="UI/Scroll/VBox/Categories/Misc" node_paths=PackedStringArray("disdot", "commands", "events")]
 layout_mode = 2
 script = SubResource("GDScript_lniry")
-disdot = NodePath("../../../../../Disdot")
+disdot = NodePath("../../../../../../Disdot")
 commands = NodePath("VBox/Registered/Commands/VBox")
 events = NodePath("VBox/Registered/Events/VBox")
 
-[node name="VBox" type="VBoxContainer" parent="UI/Scroll/VBox/HFlow/RegisteredItems"]
+[node name="VBox" type="VBoxContainer" parent="UI/Scroll/VBox/Categories/Misc/RegisteredItems"]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="UI/Scroll/VBox/HFlow/RegisteredItems/VBox"]
+[node name="Title" type="Label" parent="UI/Scroll/VBox/Categories/Misc/RegisteredItems/VBox"]
 layout_mode = 2
 text = "Registered"
 label_settings = SubResource("LabelSettings_sm5al")
 
-[node name="Registered" type="TabContainer" parent="UI/Scroll/VBox/HFlow/RegisteredItems/VBox"]
-custom_minimum_size = Vector2(162, 64)
+[node name="Registered" type="TabContainer" parent="UI/Scroll/VBox/Categories/Misc/RegisteredItems/VBox"]
+custom_minimum_size = Vector2(162, 100)
 layout_mode = 2
 theme_override_styles/tab_focus = SubResource("StyleBoxEmpty_0hxir")
 tab_alignment = 1
 current_tab = 0
 
-[node name="Commands" type="MarginContainer" parent="UI/Scroll/VBox/HFlow/RegisteredItems/VBox/Registered"]
+[node name="Commands" type="MarginContainer" parent="UI/Scroll/VBox/Categories/Misc/RegisteredItems/VBox/Registered"]
 layout_mode = 2
 metadata/_tab_index = 0
 
-[node name="VBox" type="VBoxContainer" parent="UI/Scroll/VBox/HFlow/RegisteredItems/VBox/Registered/Commands"]
+[node name="VBox" type="VBoxContainer" parent="UI/Scroll/VBox/Categories/Misc/RegisteredItems/VBox/Registered/Commands"]
 layout_mode = 2
 
-[node name="Events" type="MarginContainer" parent="UI/Scroll/VBox/HFlow/RegisteredItems/VBox/Registered"]
+[node name="Events" type="MarginContainer" parent="UI/Scroll/VBox/Categories/Misc/RegisteredItems/VBox/Registered"]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 
-[node name="VBox" type="VBoxContainer" parent="UI/Scroll/VBox/HFlow/RegisteredItems/VBox/Registered/Events"]
+[node name="VBox" type="VBoxContainer" parent="UI/Scroll/VBox/Categories/Misc/RegisteredItems/VBox/Registered/Events"]
 layout_mode = 2
 
-[node name="Opcodes" type="PanelContainer" parent="UI/Scroll/VBox/HFlow" node_paths=PackedStringArray("disdot", "opcodes")]
-custom_minimum_size = Vector2(100, 100)
+[node name="Packets" type="ScrollContainer" parent="UI/Scroll/VBox/Categories" node_paths=PackedStringArray("disdot", "container", "label_template")]
 layout_mode = 2
-script = SubResource("GDScript_ksn0x")
-disdot = NodePath("../../../../../Disdot")
-opcodes = NodePath("VBox/Scroll/Opcodes")
-
-[node name="VBox" type="VBoxContainer" parent="UI/Scroll/VBox/HFlow/Opcodes"]
-layout_mode = 2
-
-[node name="Title" type="Label" parent="UI/Scroll/VBox/HFlow/Opcodes/VBox"]
-layout_mode = 2
-text = "Opcodes"
-label_settings = SubResource("LabelSettings_0hxir")
-
-[node name="Scroll" type="ScrollContainer" parent="UI/Scroll/VBox/HFlow/Opcodes/VBox"]
-layout_mode = 2
-size_flags_vertical = 3
 horizontal_scroll_mode = 0
 vertical_scroll_mode = 4
+script = SubResource("GDScript_ea3ys")
+disdot = NodePath("../../../../../Disdot")
+container = NodePath("VBox/Packets")
+label_template = NodePath("VBox/Template")
+metadata/_tab_index = 1
 
-[node name="Opcodes" type="VBoxContainer" parent="UI/Scroll/VBox/HFlow/Opcodes/VBox/Scroll"]
+[node name="VBox" type="VBoxContainer" parent="UI/Scroll/VBox/Categories/Packets"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/separation = 0
+
+[node name="Clear" type="Button" parent="UI/Scroll/VBox/Categories/Packets/VBox"]
+layout_mode = 2
+text = "Clear"
+
+[node name="Template" type="Label" parent="UI/Scroll/VBox/Categories/Packets/VBox"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+label_settings = SubResource("LabelSettings_fwq5q")
+autowrap_mode = 2
+
+[node name="Packets" type="VBoxContainer" parent="UI/Scroll/VBox/Categories/Packets/VBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [connection signal="pressed" from="UI/Scroll/VBox/Controls/Start" to="UI/Scroll/VBox/Controls" method="_on_start_pressed"]
 [connection signal="pressed" from="UI/Scroll/VBox/Controls/Stop" to="UI/Scroll/VBox/Controls" method="_on_stop_pressed"]
+[connection signal="pressed" from="UI/Scroll/VBox/Categories/Packets/VBox/Clear" to="UI/Scroll/VBox/Categories/Packets" method="_on_clear_pressed"]
