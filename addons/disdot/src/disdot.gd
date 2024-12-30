@@ -205,11 +205,12 @@ func _on_packet_received(p: PackedByteArray) -> void:
 			_heartbeat()
 			_identify()
 
-			if verbose: print("Starting Heartbeat Timer with interval ", interval_s, "s")
+			if verbose: print("Starting heartbeat Timer with an interval of ", interval_s, "s")
 			_heartbeat_timer.start(interval_s)
 
 		Op.HEARTBEAT_ACK:
-			if verbose: print_rich("[color=gray]>>> Heartbeat ACK[/color]")
+			# TODO: handle zombied connections
+			pass
 
 		_:
 			if verbose: print("Unhandled Opcode: ", op)
