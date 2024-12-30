@@ -160,7 +160,7 @@ func _on_packet_received(p: PackedByteArray) -> void:
 					event = ReadyEvent.new(payload.d)
 
 				EventType.INVALID_SESSION:
-					event = InvalidSessionEvent.new(payload.d)
+					event = InvalidSessionEvent.new(payload.d as bool)
 					push_error("Invalid Session event received")
 					# TODO: resume connection
 

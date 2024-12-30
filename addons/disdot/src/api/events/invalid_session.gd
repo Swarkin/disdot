@@ -4,5 +4,5 @@ extends Event
 
 var resumable: bool
 
-func _init(d: Dictionary) -> void:
-	resumable = _take_bool(d, "d")
+func _init(d: bool) -> void:
+	resumable = d
