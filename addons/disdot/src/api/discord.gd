@@ -82,6 +82,26 @@ func get_channel(channel_id: int) -> HTTPResult:
 	return await _request(url)
 
 
+## Fetch all of the global commands for your application. Returns an array of application command objects.
+func get_global_application_commands() -> HTTPResult:
+	var url := join([BASE_URL, "applications", app_id.get_value(), "commands"])
+
+	return await _request(url, HTTPClient.METHOD_GET, headers())
+
+
+## Fetch all of the guild commands for your application for a specific guild. Returns an array of application command objects.
+func get_guild_application_commands(guild_id: int) -> HTTPResult:
+	var url := join([BASE_URL, "applications", app_id.get_value(), "guilds", str(guild_id), "commands"])
+
+	return await _request(url, HTTPClient.METHOD_GET, headers())
+
+## Delete a guild command. Returns 204 No Content on success.
+func delete_guild_application_command(guild_id: int, command_id: int) -> HTTPResult:
+	var url := join([BASE_URL, "applications", app_id.get_value(), "guilds", str(guild_id), "commands", str(command_id)])
+
+	return await _request(url, HTTPClient.METHOD_DELETE, headers())
+
+## Create a new guild command. New guild commands will be available in the guild immediately. Returns 201 if a command with the same name does not already exist, or a 200 if it does (in which case the previous command will be overwritten). Both responses include an application command object.
 func create_guild_application_command(guild_id: int, _name: String, description := "") -> HTTPResult:
 	var url := join([BASE_URL, "applications", app_id.get_value(), "guilds", guild_id, "commands"])
 
