@@ -3,7 +3,6 @@ class_name Disdot
 
 signal starting
 signal stopping
-signal seqnum(seq: int)
 
 class EventType:
 	const READY := "READY"
@@ -226,7 +225,6 @@ func _update_seq(num: int) -> void:
 		push_warning("Missed a sequence number!")
 
 	_last_seq = num
-	seqnum.emit(num)
 	if verbose: print_rich("[color=gray]Sequence number: ", num, "[/color]")
 
 func update_commands() -> void:

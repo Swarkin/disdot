@@ -89,8 +89,11 @@ var states := PackedStringArray([\"Connecting\", \"Open\", \"Closing\", \"Closed
 
 func _ready() -> void:
 	disdot._socket.state_changed.connect(update_status)
-	disdot.seqnum.connect(update_seq)
 	update_status(disdot._socket.s.get_ready_state())
+
+func _process(_dt: float) -> void:
+	if str(disdot._last_seq) == seq_label.text: return
+	update_seq(disdot._last_seq)
 
 func update_status(state: WebSocketPeer.State) -> void:
 	status_label.text = \"Status: \" + states[state]
