@@ -3,7 +3,6 @@ class_name Disdot
 
 signal starting
 signal stopping
-signal opcode(op: int, out: bool)
 signal seqnum(seq: int)
 
 enum Op {
@@ -18,7 +17,7 @@ enum Op {
 	REQUEST_GUILD_MEMBERS = 8,
 	INVALID_SESSION = 9,
 	HELLO = 10,
-	HEARTBEAT_ACK = 11
+	HEARTBEAT_ACK = 11,
 }
 
 class EventType:
@@ -52,7 +51,7 @@ class EventType:
 	"AUTO_MODERATION_CONFIGURATION:1048576",
 	"AUTO_MODERATION_EXECUTION:2097152",
 	"GUILD_MESSAGE_POLLS:16777216",
-	"DIRECT_MESSAGE_POLLS:33554432"
+	"DIRECT_MESSAGE_POLLS:33554432",
 ) var intents: int
 
 var _api: DiscordAPI
@@ -65,13 +64,13 @@ var _last_seq: int
 var command_cache: Dictionary[String, Array]  # Array[CommandHandler]
 var event_cache: Dictionary[String, EventHandler]
 
-func _enter_tree() -> void:
+func _ready() -> void:
 	_api = DiscordAPI.new()
 	_api.token = bot_token
 	_api.app_id = app_id
 
 	_socket = BetterWebsocket.new()
-	_socket.verbose = true
+	if verbose: _socket.verbose = true
 	_socket.packet_received.connect(_on_packet_received)
 
 	_heartbeat_timer = Timer.new()
@@ -84,37 +83,49 @@ func _enter_tree() -> void:
 		start()
 
 
-func start() -> void:
-	print("Starting...")
+## Starts the Websocket connection. Returns false if any error was encountered.
+func start() -> bool:
+	if _socket.s.get_ready_state() != WebSocketPeer.STATE_CLOSED:
+		push_error("Websocket is in use")
+		return false
 
-	if !validate_parameters():
-		return
+	if bot_token.get_value().is_empty():
+		push_error("Bot token missing")
+		return false
+
+	if app_id.get_value().is_empty():
+		push_error("App ID missing")
+		return false
 
 	update_commands()
 	update_events()
-
-	starting.emit()
 
 	if verbose:
 		print("Token: "+bot_token.get_value())
 		print("App ID: "+str(app_id.get_value()))
 		print("Commands: "+str(command_cache))
 		print("Events: "+str(event_cache))
+		print("Starting...")
+
+	starting.emit()
 
 	var r := await _api.get_gateway_bot()
 	if !r.success() or !r.status_ok():
 		push_error("GET /gateway/bot failed")
-		return
+		if verbose: print(r.body_as_string())
+		return false
 
 	var json := r.body_as_json()
 	if json is not Dictionary:
-		push_error("Invalid /gateway/bot response" + (": "+str(json)) if verbose else "")
-		return
+		push_error("Invalid /gateway/bot response")
+		if verbose: print(json)
+		return false
 
 	var url_base := (json as Dictionary).get("url", "") as String
 	if url_base.is_empty():
 		push_error("Invalid /gateway/bot response json" + (": "+str(json)) if verbose else "")
-		return
+		if verbose: print(json)
+		return false
 
 	_socket_url = url_base + "/?v=10&encoding=json"
 	if verbose: print("Websocket URL: ", _socket_url)
@@ -122,17 +133,20 @@ func start() -> void:
 	var err := _socket.begin_connection(_socket_url)
 	if err:
 		push_error("Failed to start Websocket connection: ", error_string(err))
-		return
+		return false
+
+	return true
 
 
+## Stops the Websocket connection and resets related internal state.
 func stop() -> void:
 	if _socket.s.get_ready_state() == WebSocketPeer.STATE_CLOSED:
 		push_error("Websocket is not connected")
 		return
 
+	if verbose: print("Stopping...")
 	stopping.emit()
 
-	if verbose: print("Stopping...")
 	_heartbeat_timer.stop()
 	_socket.close_connection()
 
@@ -140,7 +154,6 @@ func stop() -> void:
 func _on_packet_received(p: PackedByteArray) -> void:
 	var packet_str := p.get_string_from_utf8()
 	assert(!packet_str.is_empty())
-	if verbose: print_rich("[color=gray]>>> ", packet_str, "[/color]")
 
 	var json := JSON.parse_string(packet_str) as Dictionary
 	_strip_packet_recursive(json, "_trace")
@@ -148,18 +161,15 @@ func _on_packet_received(p: PackedByteArray) -> void:
 	var op := json.get("op", Op.INVALID) as Op
 	assert(op != Op.INVALID)
 
-	opcode.emit(op, false)
-
 	match op:
 		Op.DISPATCH:
 			_update_seq(json.get("s") as int)
 
 			var event_data := json.get("d") as Dictionary
 			var event_name := json.get("t") as String
-
-			if verbose: print("--- Event ", event_name, "\n", event_data)
-
 			var event: Event
+
+			if verbose: print(event_name)
 
 			match event_name:
 				EventType.READY:
@@ -182,18 +192,15 @@ func _on_packet_received(p: PackedByteArray) -> void:
 				EventType.INTERACTION_CREATE:
 					event = InteractionCreateEvent.new(event_data, _api)
 
-				_:
-					if verbose: print("--- Unhandled\n")
-					return
+				_: return
 
 			_dispatch_event(event_name.to_snake_case().to_upper(), event)
 
 		Op.HELLO:
-			if verbose: print("Hello Opcode received")
 			var d := json.get("d") as Dictionary
 
 			var interval_s := (d.get("heartbeat_interval") as float) * 0.001
-			assert(interval_s > 10.0, "Heartbeat interval likely too low")
+			assert(interval_s > 10.0, "Unexpected heartbeat interval")
 
 			_heartbeat()
 			_identify()
@@ -214,8 +221,6 @@ func _heartbeat() -> void:
 		{"op": Op.HEARTBEAT, "d": _last_seq if _last_seq else null}
 	))
 
-	opcode.emit(Op.HEARTBEAT, true)
-
 func _identify() -> void:
 	if verbose: print("Identify with intents ", intents)
 
@@ -231,8 +236,6 @@ func _identify() -> void:
 			}
 		}
 	}))
-
-	opcode.emit(Op.IDENTIFY, true)
 
 func _update_seq(num: int) -> void:
 	if not _last_seq + 1 == num:
@@ -288,15 +291,6 @@ func _cache_command(cmd: CommandHandler, prefix := "") -> void:
 		command_cache[prefix] = [cmd] as Array[CommandHandler]
 		if verbose: print("Adding Command ", cmd.name)
 
-func validate_parameters() -> bool:
-	if bot_token.get_value().is_empty():
-		push_error("Bot Token missing")
-		return false
-	if app_id.get_value().is_empty():
-		push_error("App ID missing")
-		return false
-	return true
-
 
 func _dispatch_command(cmd_name: String, prefix: String, ctx: CommandContext) -> void:
 	if !command_cache.has(prefix):
@@ -321,7 +315,7 @@ func _dispatch_event(event_name: String, data: Event) -> void:
 		EventType.INTERACTION_CREATE:
 			(event_cache[event_name] as InteractionCreateEventHandler)._on_event(data)
 		_:
-			push_warning("Invalid or unhandled Event "+event_name)
+			push_warning("Invalid or unimplemented event: ", event_name)
 
 
 func _strip_packet_recursive(d: Dictionary, rm_key: String) -> void:
