@@ -26,7 +26,7 @@ var t: Str
 
 func _init(_d: Dictionary) -> void:
 	op = _take_int(_d, "op") as Op
-	d = _try_take(_d, "d", {})
+	d = _try_take(_d, "d")
 	var _s := _try_take(_d, "s")
 	s = Int.new(_s) if _s else null
 	var _t := _try_take(_d, "t")

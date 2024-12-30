@@ -4,16 +4,18 @@ class_name Disdot
 signal starting
 signal stopping
 
+# https://discord.com/developers/docs/events/gateway-events#receive-events
 class EventType:
 	const READY := "READY"
-	const MESSAGE_CREATE := "MESSAGE_CREATE"
+	const INVALID_SESSION := "INVALID_SESSION"
 	const GUILD_CREATE := "GUILD_CREATE"
 	const INTERACTION_CREATE := "INTERACTION_CREATE"
+	const MESSAGE_CREATE := "MESSAGE_CREATE"
 
 @export var bot_token: ValueContainer
 @export var app_id: ValueContainer
 @export var autostart := false
-@export var verbose := true
+@export var verbose := false
 @export_flags(
 	"GUILDS:1",
 	"GUILD_MEMBERS:2",
@@ -123,7 +125,7 @@ func start() -> bool:
 
 
 ## Stops the Websocket connection and resets related internal state.
-func stop() -> void:
+func stop(clean := true) -> void:
 	if _socket.s.get_ready_state() == WebSocketPeer.STATE_CLOSED:
 		push_error("Websocket is not connected")
 		return
@@ -132,7 +134,7 @@ func stop() -> void:
 	stopping.emit()
 
 	_heartbeat_timer.stop()
-	_socket.close_connection()
+	_socket.close_connection(1000 if clean else 1002)
 
 
 # https://discord.com/developers/docs/events/gateway-events
@@ -142,7 +144,7 @@ func _on_packet_received(p: PackedByteArray) -> void:
 	if typeof(json) != TYPE_DICTIONARY:
 		push_error("Invalid packet received")
 		if verbose: print(packet_str)
-		stop()
+		stop(false)
 		return
 
 	var payload := Payload.new(json as Dictionary)
@@ -157,6 +159,20 @@ func _on_packet_received(p: PackedByteArray) -> void:
 				EventType.READY:
 					event = ReadyEvent.new(payload.d)
 
+				EventType.INVALID_SESSION:
+					event = InvalidSessionEvent.new(payload.d)
+					push_error("Invalid Session event received")
+					# TODO: resume connection
+
+					stop()
+					return
+
+				EventType.GUILD_CREATE:
+					event = GuildCreateEvent.new(payload.d)
+
+				EventType.INTERACTION_CREATE:
+					event = InteractionCreateEvent.new(payload.d, _api)
+
 				EventType.MESSAGE_CREATE:
 					event = MessageCreateEvent.new(payload.d, _api)
 					for prefix in command_cache.keys() as Array[String]:
@@ -168,24 +184,24 @@ func _on_packet_received(p: PackedByteArray) -> void:
 								if event.message.content.begins_with(prefix+cmd.name):
 									_dispatch_command(cmd.name, prefix, CommandContext.new(_api, event.message))
 
-				EventType.GUILD_CREATE:
-					event = GuildCreateEvent.new(payload.d)
-
-				EventType.INTERACTION_CREATE:
-					event = InteractionCreateEvent.new(payload.d, _api)
-
-				_: return
+				_:
+					if verbose: print("Unhandled Event: ", payload.t)
+					return
 
 			_dispatch_event(payload.t.to_snake_case().to_upper(), event)
 
 		Payload.Op.HELLO:
 			var interval_s := (payload.d["heartbeat_interval"] as float) * 0.001
-			assert(interval_s > 10.0, "Unexpected heartbeat interval")
+			if interval_s < 10.0:
+				push_error("Unexpected heartbeat interval: ", interval_s, "s")
+				stop(false)
+				return
+
+			if verbose: print("Heartbeat interval: ", interval_s, "s")
 
 			_heartbeat()
 			_identify()
 
-			if verbose: print("Starting heartbeat Timer with an interval of ", interval_s, "s")
 			_heartbeat_timer.start(interval_s)
 
 		Payload.Op.HEARTBEAT_ACK:
@@ -205,7 +221,7 @@ func _heartbeat() -> void:
 
 # https://discord.com/developers/docs/events/gateway-events#identify
 func _identify() -> void:
-	if verbose: print("Identify with intents ", intents)
+	if verbose: print("Identify with Intents ", intents)
 
 	_socket.send_packet(JSON.stringify({
 		"op": Payload.Op.IDENTIFY as int,
@@ -226,6 +242,7 @@ func _update_seq(num: int) -> void:
 
 	_last_seq = num
 	if verbose: print_rich("[color=gray]Sequence number: ", num, "[/color]")
+
 
 func update_commands() -> void:
 	command_cache.clear()
@@ -272,7 +289,6 @@ func _cache_command(cmd: CommandHandler, prefix := "") -> void:
 	else:
 		command_cache[prefix] = [cmd] as Array[CommandHandler]
 		if verbose: print("Adding Command ", cmd.name)
-
 
 func _dispatch_command(cmd_name: String, prefix: String, ctx: CommandContext) -> void:
 	if !command_cache.has(prefix):
