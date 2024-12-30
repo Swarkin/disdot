@@ -166,17 +166,42 @@ script/source = "extends Container
 func _ready() -> void:
 	disdot._socket.packet_received.connect(_on_packet_received)
 
+
 func _on_packet_received(content: PackedByteArray) -> void:
 	var label := label_template.duplicate()
 	var panel := PanelContainer.new()
-	label.text = content.get_string_from_utf8()
+	var json := JSON.parse_string(content.get_string_from_utf8())
+	_strip_dict(json, \"_trace\")
+
+	label.text = JSON.stringify(json)
 	label.visible = true
 	panel.add_child(label)
 	container.add_child(panel)
 
+
 func _on_clear_pressed() -> void:
 	for c in container.get_children():
 		c.queue_free()
+
+
+func _strip_dict(d: Dictionary, rm_key: String) -> void:
+	d.erase(rm_key)
+
+	for key in d.keys():
+		var val := d[key] as Variant
+
+		if val is Dictionary:
+			_strip_dict(val as Dictionary, rm_key)
+		elif val is Array:
+			_walk_array(val as Array, rm_key)
+
+
+func _walk_array(arr: Array, rm_key: String) -> void:
+	for val in arr:
+		if val is Dictionary:
+			_strip_dict(val as Dictionary, rm_key)
+		elif val is Array:
+			_walk_array(val as Array, rm_key)
 "
 
 [sub_resource type="SystemFont" id="SystemFont_ea3ys"]
@@ -244,11 +269,10 @@ text = "Stop"
 [node name="Categories" type="TabContainer" parent="UI/Scroll/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
-current_tab = 1
+current_tab = 0
 tab_focus_mode = 0
 
 [node name="Misc" type="HFlowContainer" parent="UI/Scroll/VBox/Categories"]
-visible = false
 layout_mode = 2
 size_flags_vertical = 3
 metadata/_tab_index = 0
@@ -315,6 +339,7 @@ metadata/_tab_index = 1
 layout_mode = 2
 
 [node name="Packets" type="ScrollContainer" parent="UI/Scroll/VBox/Categories" node_paths=PackedStringArray("disdot", "container", "label_template")]
+visible = false
 layout_mode = 2
 horizontal_scroll_mode = 0
 vertical_scroll_mode = 4
@@ -338,7 +363,7 @@ visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 label_settings = SubResource("LabelSettings_fwq5q")
-autowrap_mode = 2
+autowrap_mode = 1
 
 [node name="Packets" type="VBoxContainer" parent="UI/Scroll/VBox/Categories/Packets/VBox"]
 layout_mode = 2
