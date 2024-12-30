@@ -1,6 +1,6 @@
 class_name BetterBaseClass
 extends RefCounted
-## BetterBaseClass v1.5.0 by swark1n
+## BetterBaseClass v2.0.0 by swark1n
 
 func _init(dict := {}) -> void:
 	for key in dict:
@@ -47,7 +47,7 @@ func _init(dict := {}) -> void:
 		self[key] = dict[key]
 
 
-static func _try_take(d: Dictionary, key: String, default: Variant) -> Variant:
+static func _try_take(d: Dictionary, key: String, default: Variant = null) -> Variant:
 	var v := d.get(key)
 	if v:
 		d.erase(key)
