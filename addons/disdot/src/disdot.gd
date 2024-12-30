@@ -5,21 +5,6 @@ signal starting
 signal stopping
 signal seqnum(seq: int)
 
-enum Op {
-	INVALID = -1,
-	DISPATCH = 0,
-	HEARTBEAT = 1,
-	IDENTIFY = 2,
-	PRESENCE_UPDATE = 3,
-	VOICE_STATE_UPDATE = 4,
-	RESUME = 6,
-	RECONNECT = 7,
-	REQUEST_GUILD_MEMBERS = 8,
-	INVALID_SESSION = 9,
-	HELLO = 10,
-	HEARTBEAT_ACK = 11,
-}
-
 class EventType:
 	const READY := "READY"
 	const MESSAGE_CREATE := "MESSAGE_CREATE"
@@ -151,32 +136,30 @@ func stop() -> void:
 	_socket.close_connection()
 
 
+# https://discord.com/developers/docs/events/gateway-events
 func _on_packet_received(p: PackedByteArray) -> void:
 	var packet_str := p.get_string_from_utf8()
-	assert(!packet_str.is_empty())
+	var json := JSON.parse_string(packet_str)
+	if typeof(json) != TYPE_DICTIONARY:
+		push_error("Invalid packet received")
+		if verbose: print(packet_str)
+		stop()
+		return
 
-	var json := JSON.parse_string(packet_str) as Dictionary
-	_strip_packet_recursive(json, "_trace")
+	var payload := Payload.new(json as Dictionary)
 
-	var op := json.get("op", Op.INVALID) as Op
-	assert(op != Op.INVALID)
-
-	match op:
-		Op.DISPATCH:
-			_update_seq(json.get("s") as int)
-
-			var event_data := json.get("d") as Dictionary
-			var event_name := json.get("t") as String
+	match payload.op:
+		Payload.Op.DISPATCH:
+			_update_seq(payload.s.value)
+			if verbose: print(payload.t)
 			var event: Event
 
-			if verbose: print(event_name)
-
-			match event_name:
+			match payload.t:
 				EventType.READY:
-					event = ReadyEvent.new(event_data)
+					event = ReadyEvent.new(payload.d)
 
 				EventType.MESSAGE_CREATE:
-					event = MessageCreateEvent.new(event_data, _api)
+					event = MessageCreateEvent.new(payload.d, _api)
 					for prefix in command_cache.keys() as Array[String]:
 						if event.message.content.begins_with(prefix):
 							for cmd in command_cache[prefix] as Array[CommandHandler]:
@@ -187,19 +170,17 @@ func _on_packet_received(p: PackedByteArray) -> void:
 									_dispatch_command(cmd.name, prefix, CommandContext.new(_api, event.message))
 
 				EventType.GUILD_CREATE:
-					event = GuildCreateEvent.new(event_data)
+					event = GuildCreateEvent.new(payload.d)
 
 				EventType.INTERACTION_CREATE:
-					event = InteractionCreateEvent.new(event_data, _api)
+					event = InteractionCreateEvent.new(payload.d, _api)
 
 				_: return
 
-			_dispatch_event(event_name.to_snake_case().to_upper(), event)
+			_dispatch_event(payload.t.to_snake_case().to_upper(), event)
 
-		Op.HELLO:
-			var d := json.get("d") as Dictionary
-
-			var interval_s := (d.get("heartbeat_interval") as float) * 0.001
+		Payload.Op.HELLO:
+			var interval_s := (payload.d["heartbeat_interval"] as float) * 0.001
 			assert(interval_s > 10.0, "Unexpected heartbeat interval")
 
 			_heartbeat()
@@ -208,25 +189,27 @@ func _on_packet_received(p: PackedByteArray) -> void:
 			if verbose: print("Starting heartbeat Timer with an interval of ", interval_s, "s")
 			_heartbeat_timer.start(interval_s)
 
-		Op.HEARTBEAT_ACK:
+		Payload.Op.HEARTBEAT_ACK:
 			# TODO: handle zombied connections
 			pass
 
 		_:
-			if verbose: print("Unhandled Opcode: ", op)
+			if verbose: print("Unhandled Opcode: ", payload.op)
 
+# https://discord.com/developers/docs/events/gateway-events#heartbeat
 func _heartbeat() -> void:
-	if verbose: print_rich("Heartbeat")
+	if verbose: print("Heartbeat")
 
 	_socket.send_packet(JSON.stringify(
-		{"op": Op.HEARTBEAT, "d": _last_seq if _last_seq else null}
+		{"op": Payload.Op.HEARTBEAT as int, "d": _last_seq if _last_seq else null}
 	))
 
+# https://discord.com/developers/docs/events/gateway-events#identify
 func _identify() -> void:
 	if verbose: print("Identify with intents ", intents)
 
 	_socket.send_packet(JSON.stringify({
-		"op": Op.IDENTIFY,
+		"op": Payload.Op.IDENTIFY as int,
 		"d": {
 			"token": bot_token.get_value(),
 			"intents": intents,
@@ -234,7 +217,7 @@ func _identify() -> void:
 				"os": "linux",
 				"browser": "disdot",
 				"device": "disdot"
-			}
+			},
 		}
 	}))
 
@@ -317,22 +300,3 @@ func _dispatch_event(event_name: String, data: Event) -> void:
 			(event_cache[event_name] as InteractionCreateEventHandler)._on_event(data)
 		_:
 			push_warning("Invalid or unimplemented event: ", event_name)
-
-
-func _strip_packet_recursive(d: Dictionary, rm_key: String) -> void:
-	d.erase(rm_key)
-
-	for key in d.keys():
-		var val := d[key] as Variant
-
-		if val is Dictionary:
-			_strip_packet_recursive(val as Dictionary, rm_key)
-		elif val is Array:
-			_walk_array(val as Array, rm_key)
-
-func _walk_array(arr: Array, rm_key: String) -> void:
-	for val in arr:
-		if val is Dictionary:
-			_strip_packet_recursive(val as Dictionary, rm_key)
-		elif val is Array:
-			_walk_array(val as Array, rm_key)
