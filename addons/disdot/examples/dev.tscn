@@ -223,7 +223,7 @@ unique_name_in_owner = true
 script = ExtResource("1_0hxir")
 bot_token = SubResource("Resource_v6fhi")
 app_id = SubResource("Resource_v00m7")
-verbose = false
+verbose = true
 intents = 33280
 
 [node name="Commands" type="Node" parent="Disdot"]
