@@ -1,4 +1,4 @@
-class_name CommandContext
+class_name TextCommandContext
 extends RefCounted
 
 var _api: DiscordAPI

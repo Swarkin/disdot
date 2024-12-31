@@ -1,5 +1,5 @@
 @icon("res://addons/disdot/src/icons/event.svg")
-class_name EventHandler
+class_name BaseEventHandler
 extends Node
 # Do not use this class directly.
 

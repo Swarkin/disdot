@@ -47,8 +47,9 @@ var _heartbeat_timer: Timer
 var _socket_url: String
 var _last_seq: int
 
-var command_cache: Dictionary[String, Array]  # Array[CommandHandler]
-var event_cache: Dictionary[String, EventHandler]
+var text_command_cache: Dictionary[String, TextCommandHandler]
+var slash_command_cache: Dictionary[String, SlashCommandHandler]
+var event_cache: Dictionary[String, BaseEventHandler]
 
 func _ready() -> void:
 	_api = DiscordAPI.new()
@@ -87,11 +88,12 @@ func start() -> bool:
 	update_events()
 
 	if verbose:
-		print("Token: "+bot_token.get_value())
-		print("App ID: "+str(app_id.get_value()))
-		print("Commands: "+str(command_cache))
-		print("Events: "+str(event_cache))
 		print("Starting...")
+		print("Token: ", bot_token.get_value())
+		print("App ID: ", app_id.get_value())
+		print("Text Commands: ", text_command_cache)
+		print("Slash Commands: ", slash_command_cache)
+		print("Events: ", event_cache)
 
 	starting.emit()
 
@@ -123,7 +125,6 @@ func start() -> bool:
 
 	return true
 
-
 ## Stops the Websocket connection and resets related internal state.
 func stop(clean := true) -> void:
 	if _socket.s.get_ready_state() == WebSocketPeer.STATE_CLOSED:
@@ -152,10 +153,11 @@ func _on_packet_received(p: PackedByteArray) -> void:
 	match payload.op:
 		Payload.Op.DISPATCH:
 			_update_seq(payload.s.value)
-			if verbose: print(payload.t)
 			var event: Event
+			var event_name := payload.t.value
+			if verbose: print(event_name)
 
-			match payload.t:
+			match event_name:
 				EventType.READY:
 					event = ReadyEvent.new(payload.d)
 
@@ -175,20 +177,13 @@ func _on_packet_received(p: PackedByteArray) -> void:
 
 				EventType.MESSAGE_CREATE:
 					event = MessageCreateEvent.new(payload.d, _api)
-					for prefix in command_cache.keys() as Array[String]:
-						if event.message.content.begins_with(prefix):
-							for cmd in command_cache[prefix] as Array[CommandHandler]:
-								if cmd.ignore_bots and event.message.author.bot:
-									continue
-
-								if event.message.content.begins_with(prefix+cmd.name):
-									_dispatch_command(cmd.name, prefix, CommandContext.new(_api, event.message))
+					_dispatch_text_command(event)
 
 				_:
-					if verbose: print("Unhandled Event: ", payload.t)
+					push_warning("Event not implemented: ", event_name)
 					return
 
-			_dispatch_event(payload.t.to_snake_case().to_upper(), event)
+			_dispatch_event(event_name.to_snake_case().to_upper(), event)
 
 		Payload.Op.HELLO:
 			var interval_s := (payload.d["heartbeat_interval"] as float) * 0.001
@@ -221,7 +216,7 @@ func _heartbeat() -> void:
 
 # https://discord.com/developers/docs/events/gateway-events#identify
 func _identify() -> void:
-	if verbose: print("Identify with Intents ", intents)
+	if verbose: print("Identify with Intents: ", intents)
 
 	_socket.send_packet(JSON.stringify({
 		"op": Payload.Op.IDENTIFY as int,
@@ -245,32 +240,24 @@ func _update_seq(num: int) -> void:
 
 
 func update_commands() -> void:
-	command_cache.clear()
-	var cmds_node := get_node_or_null(^"Commands")
-	if !cmds_node: return
+	text_command_cache.clear()
+	var commands := get_node_or_null(^"Commands")
+	if !commands: return
 
-	for node in cmds_node.get_children():
-		if node is CommandHandler:
-			var command := node as CommandHandler
-			_cache_command(command)
-
-		elif node is CommandGroup:
-			var cmd_group := node as CommandGroup
-			for cmd in cmd_group.get_children():
-				if cmd is CommandHandler:
-					var command := cmd as CommandHandler
-					_cache_command(command, cmd_group.prefix)
+	for node in commands.get_children():
+		if node is TextCommandHandler or node is SlashCommandHandler:
+			_cache_command(node)
+		elif node is BaseCommandHandler && verbose:
+			push_warning("Unknown CommandHandler node: ", node.get_path())
 
 func update_events() -> void:
 	event_cache.clear()
 	var events_node := get_node_or_null(^"Events")
-	if !events_node:
-		if verbose: print("No Events to update")
-		return
+	if !events_node: return
 
 	for node in events_node.get_children():
-		if node is EventHandler:
-			var event := node as EventHandler
+		if node is BaseEventHandler:
+			var event := node as BaseEventHandler
 			var event_name := event.name.to_snake_case().to_upper()
 			if !event_name in EventType:
 				push_warning("Invalid Event "+event_name)
@@ -279,38 +266,30 @@ func update_events() -> void:
 			if verbose: print("Adding Event "+event_name)
 			event_cache[event_name] = event
 
-func _cache_command(cmd: CommandHandler, prefix := "") -> void:
-	if prefix.is_empty():
-		prefix = cmd.prefix
-
-	if command_cache.has(prefix):
-		(command_cache[prefix] as Array[CommandHandler]).append(cmd)
-		if verbose: print("Adding Command ", cmd.name)
+func _cache_command(cmd: BaseCommandHandler) -> void:
+	if cmd is TextCommandHandler:
+		text_command_cache[cmd.name] = cmd
+		if verbose: print("Registering TextCommandHandler for '", cmd.name, "'")
+	elif cmd is SlashCommandHandler:
+		slash_command_cache[cmd.name] = cmd
+		if verbose: print("Registering SlashCommandHandler for '", cmd.name, "'")
 	else:
-		command_cache[prefix] = [cmd] as Array[CommandHandler]
-		if verbose: print("Adding Command ", cmd.name)
+		push_error("Invalid CommandHandler")
 
-func _dispatch_command(cmd_name: String, prefix: String, ctx: CommandContext) -> void:
-	if !command_cache.has(prefix):
-		if verbose: print("No handler for command ", cmd_name)
-		return
 
-	for handler in command_cache[prefix] as Array[CommandHandler]:
-		if handler.name == cmd_name:
-			handler._on_command(ctx)
+func _dispatch_text_command(event: MessageCreateEvent) -> void:
+	for prefix in text_command_cache:
+		if event.message.content.begins_with(prefix):
+			var command_handler := text_command_cache[prefix]
+			if command_handler.ignore_bots && event.message.author.bot:
+				break
+
+			command_handler._on_command(TextCommandContext.new(_api, event.message))
 			break
 
 func _dispatch_event(event_name: String, data: Event) -> void:
 	if !event_cache.has(event_name):
-		if verbose: print("No handler for event ", event_name)
+		if verbose: print("No handler for event '", event_name, "'")
 		return
 
-	match event_name:
-		EventType.READY:
-			(event_cache[event_name] as ReadyEventHandler)._on_event(data)
-		EventType.MESSAGE_CREATE:
-			(event_cache[event_name] as MessageCreateEventHandler)._on_event(data)
-		EventType.INTERACTION_CREATE:
-			(event_cache[event_name] as InteractionCreateEventHandler)._on_event(data)
-		_:
-			push_warning("Invalid or unimplemented event: ", event_name)
+	event_cache[event_name]._on_event(data)
