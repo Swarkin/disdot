@@ -245,10 +245,8 @@ func update_commands() -> void:
 	if !commands: return
 
 	for node in commands.get_children():
-		if node is TextCommandHandler or node is SlashCommandHandler:
-			_cache_command(node)
-		elif node is BaseCommandHandler && verbose:
-			push_warning("Unknown CommandHandler node: ", node.get_path())
+		if node is BaseCommandHandler:
+			_cache_command(node as BaseCommandHandler)
 
 func update_events() -> void:
 	event_cache.clear()
@@ -268,13 +266,13 @@ func update_events() -> void:
 
 func _cache_command(cmd: BaseCommandHandler) -> void:
 	if cmd is TextCommandHandler:
-		text_command_cache[cmd.name] = cmd
-		if verbose: print("Registering TextCommandHandler for '", cmd.name, "'")
+		text_command_cache[cmd.name] = cmd as TextCommandHandler
+		if verbose: print("Registered TextCommandHandler for '", cmd.name, "'")
 	elif cmd is SlashCommandHandler:
-		slash_command_cache[cmd.name] = cmd
-		if verbose: print("Registering SlashCommandHandler for '", cmd.name, "'")
+		slash_command_cache[cmd.name] = cmd as SlashCommandHandler
+		if verbose: print("Registered SlashCommandHandler for '", cmd.name, "'")
 	else:
-		push_error("Invalid CommandHandler")
+		push_warning("Invalid CommandHandler node '", cmd.name, "' (", cmd.get_path(), ")")
 
 
 func _dispatch_text_command(event: MessageCreateEvent) -> void:
