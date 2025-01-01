@@ -1,0 +1,20 @@
+[gd_scene load_steps=5 format=3 uid="uid://dwoe6pkq18gs"]
+
+[ext_resource type="Script" path="res://addons/disdot/examples/commands/echo.gd" id="1_7hvbi"]
+[ext_resource type="Script" path="res://addons/disdot/src/classes/commands/base_command_handler.gd" id="2_8mcrc"]
+[ext_resource type="Script" path="res://addons/disdot/src/classes/commands/parameters/command_parameter_string.gd" id="3_kwq0p"]
+[ext_resource type="Script" path="res://addons/disdot/src/classes/commands/parameters/command_parameter_int.gd" id="4_81o0a"]
+
+[node name="echo" type="Node"]
+script = ExtResource("1_7hvbi")
+metadata/_custom_type_script = ExtResource("2_8mcrc")
+
+[node name="text" type="Node" parent="."]
+script = ExtResource("3_kwq0p")
+metadata/_custom_type_script = ExtResource("3_kwq0p")
+
+[node name="count" type="Node" parent="."]
+script = ExtResource("4_81o0a")
+default = "1"
+required = false
+metadata/_custom_type_script = ExtResource("4_81o0a")

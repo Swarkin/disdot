@@ -1,10 +1,9 @@
-[gd_scene load_steps=23 format=3 uid="uid://hisv2i8wwbf1"]
+[gd_scene load_steps=20 format=3 uid="uid://hisv2i8wwbf1"]
 
 [ext_resource type="Script" path="res://addons/disdot/src/disdot.gd" id="1_0hxir"]
 [ext_resource type="Script" uid="uid://djqyayc07p26o" path="res://addons/disdot/src/classes/value_container.gd" id="2_sm5al"]
-[ext_resource type="Script" path="res://addons/disdot/examples/commands/reply.gd" id="3_0s5yj"]
-[ext_resource type="Script" path="res://addons/disdot/src/classes/commands/base_command_handler.gd" id="3_sm5al"]
-[ext_resource type="Script" path="res://addons/disdot/src/classes/commands/command_parameter.gd" id="5_fwq5q"]
+[ext_resource type="PackedScene" uid="uid://dwoe6pkq18gs" path="res://addons/disdot/examples/commands/echo_command.tscn" id="3_1de2u"]
+[ext_resource type="Texture2D" uid="uid://c6iohjhne3jm1" path="res://addons/disdot/src/icons/reload.svg" id="4_ea3ys"]
 
 [sub_resource type="Resource" id="Resource_v6fhi"]
 script = ExtResource("2_sm5al")
@@ -116,6 +115,7 @@ script/source = "extends Container
 @export var none_label: Label
 
 func _ready() -> void:
+	none_label.visible = false
 	disdot.starting.connect(reload)
 	disdot.update_commands()
 	disdot.update_events()
@@ -154,18 +154,6 @@ func reload() -> void:
 "
 
 [sub_resource type="LabelSettings" id="LabelSettings_sm5al"]
-
-[sub_resource type="Image" id="Image_fwq5q"]
-data = {
-"data": PackedByteArray(255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 3, 224, 224, 224, 105, 224, 224, 224, 192, 224, 224, 224, 244, 224, 224, 224, 238, 224, 224, 224, 197, 224, 224, 224, 105, 255, 255, 255, 4, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 233, 233, 233, 23, 225, 225, 225, 207, 224, 224, 224, 255, 224, 224, 224, 255, 224, 224, 224, 255, 224, 224, 224, 255, 224, 224, 224, 255, 224, 224, 224, 255, 224, 224, 224, 198, 226, 226, 226, 26, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 6, 224, 224, 224, 205, 224, 224, 224, 255, 224, 224, 224, 218, 225, 225, 225, 83, 237, 237, 237, 14, 237, 237, 237, 14, 224, 224, 224, 82, 224, 224, 224, 220, 224, 224, 224, 255, 224, 224, 224, 197, 255, 255, 255, 4, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 225, 225, 225, 102, 224, 224, 224, 255, 224, 224, 224, 218, 227, 227, 227, 18, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 224, 224, 224, 16, 224, 224, 224, 221, 224, 224, 224, 255, 225, 225, 225, 101, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 224, 224, 224, 198, 224, 224, 224, 255, 225, 225, 225, 84, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 226, 226, 226, 86, 224, 224, 224, 255, 224, 224, 224, 194, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 1, 255, 255, 255, 4, 224, 224, 224, 238, 224, 224, 224, 255, 227, 227, 227, 18, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 229, 229, 229, 19, 224, 224, 224, 255, 224, 224, 224, 233, 255, 255, 255, 0, 255, 255, 255, 0, 224, 224, 224, 160, 224, 224, 224, 255, 224, 224, 224, 255, 224, 224, 224, 255, 224, 224, 224, 255, 225, 225, 225, 159, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 230, 230, 230, 20, 224, 224, 224, 255, 224, 224, 224, 237, 255, 255, 255, 0, 255, 255, 255, 0, 230, 230, 230, 10, 224, 224, 224, 213, 224, 224, 224, 255, 224, 224, 224, 255, 224, 224, 224, 212, 230, 230, 230, 10, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 224, 224, 224, 90, 224, 224, 224, 255, 224, 224, 224, 185, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 225, 225, 225, 42, 224, 224, 224, 245, 224, 224, 224, 245, 225, 225, 225, 42, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 232, 232, 232, 22, 224, 224, 224, 224, 224, 224, 224, 255, 224, 224, 224, 98, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 224, 224, 224, 96, 226, 226, 226, 95, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 230, 230, 230, 20, 224, 224, 224, 88, 224, 224, 224, 221, 224, 224, 224, 255, 225, 225, 225, 199, 255, 255, 255, 2, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 224, 224, 224, 255, 224, 224, 224, 255, 224, 224, 224, 255, 224, 224, 224, 200, 227, 227, 227, 18, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 224, 224, 224, 236, 224, 224, 224, 195, 224, 224, 224, 96, 255, 255, 255, 5, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0, 255, 255, 255, 0),
-"format": "RGBA8",
-"height": 16,
-"mipmaps": false,
-"width": 16
-}
-
-[sub_resource type="ImageTexture" id="ImageTexture_siyqr"]
-image = SubResource("Image_fwq5q")
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_0hxir"]
 
@@ -243,13 +231,7 @@ intents = 33280
 
 [node name="Commands" type="Node" parent="Disdot"]
 
-[node name="echo" type="Node" parent="Disdot/Commands"]
-script = ExtResource("3_0s5yj")
-metadata/_custom_type_script = ExtResource("3_sm5al")
-
-[node name="CommandParameter" type="Node" parent="Disdot/Commands/echo"]
-script = ExtResource("5_fwq5q")
-metadata/_custom_type_script = ExtResource("5_fwq5q")
+[node name="echo" parent="Disdot/Commands" instance=ExtResource("3_1de2u")]
 
 [node name="Events" type="Node" parent="Disdot"]
 
@@ -288,11 +270,10 @@ text = "Stop"
 [node name="Categories" type="TabContainer" parent="UI/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
-current_tab = 1
+current_tab = 0
 tab_focus_mode = 0
 
 [node name="Misc" type="HFlowContainer" parent="UI/VBox/Categories"]
-visible = false
 layout_mode = 2
 size_flags_vertical = 3
 metadata/_tab_index = 0
@@ -345,7 +326,7 @@ label_settings = SubResource("LabelSettings_sm5al")
 layout_mode = 2
 size_flags_horizontal = 10
 size_flags_vertical = 4
-texture_normal = SubResource("ImageTexture_siyqr")
+texture_normal = ExtResource("4_ea3ys")
 
 [node name="Registered" type="TabContainer" parent="UI/VBox/Categories/Misc/RegisteredItems/VBox"]
 custom_minimum_size = Vector2(171, 72)
@@ -362,7 +343,6 @@ metadata/_tab_index = 0
 layout_mode = 2
 
 [node name="None" type="Label" parent="UI/VBox/Categories/Misc/RegisteredItems/VBox/Registered/Text"]
-visible = false
 layout_mode = 2
 text = "None"
 label_settings = SubResource("LabelSettings_ea3ys")
@@ -386,6 +366,7 @@ metadata/_tab_index = 2
 layout_mode = 2
 
 [node name="Packets" type="ScrollContainer" parent="UI/VBox/Categories" node_paths=PackedStringArray("disdot", "container", "label_template")]
+visible = false
 layout_mode = 2
 horizontal_scroll_mode = 0
 script = SubResource("GDScript_ea3ys")
@@ -419,3 +400,5 @@ size_flags_vertical = 3
 [connection signal="pressed" from="UI/VBox/Controls/Stop" to="UI/VBox/Controls" method="_on_stop_pressed"]
 [connection signal="pressed" from="UI/VBox/Categories/Misc/RegisteredItems/VBox/Header/Reload" to="UI/VBox/Categories/Misc/RegisteredItems" method="reload"]
 [connection signal="pressed" from="UI/VBox/Categories/Packets/VBox/Clear" to="UI/VBox/Categories/Packets" method="_on_clear_pressed"]
+
+[editable path="Disdot/Commands/echo"]

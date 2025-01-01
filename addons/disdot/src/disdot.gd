@@ -177,7 +177,10 @@ func _on_packet_received(p: PackedByteArray) -> void:
 
 				EventType.MESSAGE_CREATE:
 					event = MessageCreateEvent.new(payload.d, _api)
-					_dispatch_text_command(event)
+					for prefix in text_command_cache:
+						if !event.message.content.begins_with(prefix + " "): continue
+						_dispatch_text_command(event, prefix)
+						break
 
 				_:
 					push_warning("Event not implemented: ", event_name)
@@ -275,15 +278,52 @@ func _cache_command(cmd: BaseCommandHandler) -> void:
 		push_warning("Invalid CommandHandler node '", cmd.name, "' (", cmd.get_path(), ")")
 
 
-func _dispatch_text_command(event: MessageCreateEvent) -> void:
-	for prefix in text_command_cache:
-		if event.message.content.begins_with(prefix):
-			var command_handler := text_command_cache[prefix]
-			if command_handler.ignore_bots && event.message.author.bot:
-				break
+func _dispatch_text_command(event: MessageCreateEvent, cmd: String) -> void:
+	if verbose: print(cmd)
 
-			command_handler._on_command(TextCommandContext.new(_api, event.message))
-			break
+	var command_handler := text_command_cache[cmd]
+	if command_handler.ignore_bots && event.message.author.bot:
+		return
+
+	if command_handler._parameters.is_empty():
+		command_handler._on_command(TextCommandContext.new(_api, event.message))
+		return
+
+	var input := _extract_parts(event.message.content)
+	input.remove_at(0)  # remove command name
+	var input_count := input.size()
+	if verbose:
+		print("TextCommand input: ", input)
+
+	if input_count > command_handler._parameters.size():
+		if verbose: print("TextCommand: too many input parts")
+		return
+	elif input_count < command_handler._required_count:
+		if verbose: print("TextCommand: not enough input parts")
+		return
+
+	var args: Dictionary[String, Variant] = {}
+	var i := 0
+
+	for p in command_handler._parameters:
+		var v := input[i] if i < input_count else p.default
+		prints(p.name, v)
+
+		if p is CommandParameterString:
+			args[p.name] = v
+		elif p is CommandParameterInt:
+			if !v.is_valid_int():
+				if verbose: print("TextCommand: invalid int parameter")
+				return
+
+			args[p.name] = v.to_int()
+		else:
+			push_error("Invalid CommandParameter node '", p.name, "' (", p.get_path(), ")")
+			return
+
+		i += 1
+
+	command_handler._on_command(TextCommandContext.new(_api, event.message), args)
 
 func _dispatch_event(event_name: String, data: Event) -> void:
 	if !event_cache.has(event_name):
@@ -291,3 +331,32 @@ func _dispatch_event(event_name: String, data: Event) -> void:
 		return
 
 	event_cache[event_name]._on_event(data)
+
+
+func _extract_parts(str: String) -> PackedStringArray:
+	var parts := PackedStringArray()
+	var storage := ""
+
+	for s in str.split(" ", false):
+		var starts := s.begins_with("\"")
+		var ends := s.ends_with("\"")
+
+		if starts && ends:
+			parts.append(s.substr(1, s.length() - 2))
+		elif starts:
+			storage = s.right(-1) + " "
+		elif ends:
+			storage += s.left(-1)
+			parts.append(storage)
+			storage = ""
+		else:
+			if storage:
+				storage += s + " "
+			else:
+				parts.append(s)
+
+	if storage:
+		# Unterminated quotes
+		parts.append(storage.left(-1))
+
+	return parts

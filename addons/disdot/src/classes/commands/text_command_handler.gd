@@ -4,5 +4,5 @@ extends BaseCommandHandler
 
 @export var ignore_bots := true
 
-func _on_command(ctx: TextCommandContext) -> void:
+func _on_command(ctx: TextCommandContext, args: Dictionary[String, Variant] = {}) -> void:
 	assert(false, "Cannot call function on abstract class")
